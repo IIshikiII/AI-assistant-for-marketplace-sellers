@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>{% endblock %}
+{% block content %}
+<div class="text-sm breadcrumbs mb-2"><ul><li><a href="/products">Товары</a></li><li>{{ p.sku }}</li></ul></div>
+<div class="flex flex-wrap items-center gap-3 mb-6">
+  <h1 class="text-3xl font-bold">{{ p.name }}</h1>
+  <span class="badge {{ 'badge-secondary' if p.marketplace == 'Ozon' else 'badge-primary' }}">{{ p.marketplace }}</span>
+  <span class="badge badge-ghost">{{ p.category }}</span>
+</div>
+
+<div class="stats stats-vertical md:stats-horizontal shadow-sm bg-base-100 w-full mb-6">
+  <div class="stat"><div class="stat-title">Цена / маржа</div><div class="stat-value text-2xl">{{ st.price|rub }}</div><div class="stat-desc">маржа {{ st.unit_margin|rub }} за шт</div></div>
+  <div class="stat"><div class="stat-title">Продажи 7 дней</div><div class="stat-value text-2xl">{{ st.units_7 }} шт</div><div class="stat-desc">{{ st.sales_change|pct(True) }} к прошлой неделе</div></div>
+  <div class="stat"><div class="stat-title">Остаток</div><div class="stat-value text-2xl {{ 'text-error' if st.cover_days < p.lead_time_days }}">{{ st.stock }} шт</div><div class="stat-desc">хватит на {{ st.cover_days|days }} дн · поставка {{ p.lead_time_days }} дн</div></div>
+  <div class="stat"><div class="stat-title">Реклама 14 дн</div><div class="stat-value text-2xl">{{ st.ad_spend_14|rub }}</div><div class="stat-desc">ДРР {{ st.drr_14|pct }}</div></div>
+  <div class="stat"><div class="stat-title">Рейтинг 30 дн</div><div class="stat-value text-2xl">{{ '%.1f'|format(st.rating_30) if st.rating_30 else '—' }} ★</div><div class="stat-desc">негатив {{ st.negative_share_30|pct }} из {{ st.reviews_30 }}</div></div>
+</div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <section class="lg:col-span-2 space-y-6">
+    <div class="card bg-base-100 shadow-sm"><div class="card-body">
+      <h2 class="card-title text-base">Продажи и остаток, 60 дней</h2>
+      <div class="h-72"><canvas id="chart"></canvas></div>
+      {% if causes %}<div class="text-sm"><span class="font-medium">Диагностика факторов:</span> {{ causes|join('; ') }}.</div>{% endif %}
+    </div></div>
+
+    {% for rec in recs %}{% include "partials/rec_card.html" %}{% endfor %}
+  </section>
+
+  <aside class="space-y-4">
+    <div class="card bg-base-100 shadow-sm"><div class="card-body">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="card-title text-base">Отзывы</h2>
+        <button class="btn btn-primary btn-sm" hx-post="/products/{{ p.id }}/reviews/analyze" hx-target="#analysis">
+          <span class="loading loading-spinner loading-xs htmx-indicator"></span>✦ Разбор отзывов ИИ
+        </button>
+      </div>
+      <div id="analysis">{% if p.review_analysis %}{% with a=p.review_analysis %}{% include "partials/review_analysis.html" %}{% endwith %}{% endif %}</div>
+      <ul class="divide-y divide-base-300 max-h-[32rem] overflow-y-auto text-sm">
+        {% for r in p.reviews[:40] %}
+        <li class="py-2">
+          <div class="flex justify-between text-xs opacity-60"><span class="{{ 'text-error opacity-100' if r.rating <= 2 }}">{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</span><span>{{ r.day.strftime('%d.%m') }}</span></div>
+          <div>{{ r.text }}</div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div></div>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const h = {{ st.history|tojson }};
+new Chart(document.getElementById('chart'), {
+  data: {
+    labels: h.map(x => x.day.slice(5).split('-').reverse().join('.')),
+    datasets: [
+      {type: 'bar', label: 'Продажи, шт', data: h.map(x => x.units), backgroundColor: '#4f46e5aa', yAxisID: 'y'},
+      {type: 'line', label: 'Остаток, шт', data: h.map(x => x.stock), borderColor: '#10b981', pointRadius: 0, tension: .25, yAxisID: 'y1'},
+      {type: 'line', label: 'Цена, ₽', data: h.map(x => x.price), borderColor: '#f59e0b', borderDash: [4,4], pointRadius: 0, yAxisID: 'y2', hidden: {{ 'false' if st.price_change|abs > 0.05 else 'true' }}},
+    ]
+  },
+  options: {
+    maintainAspectRatio: false, interaction: {mode: 'index', intersect: false},
+    scales: {
+      y: {position: 'left', title: {display: true, text: 'продажи'}},
+      y1: {position: 'right', grid: {drawOnChartArea: false}, title: {display: true, text: 'остаток'}},
+      y2: {display: false},
+    },
+    plugins: {legend: {position: 'bottom'}}
+  }
+});
+</script>
+{% endblock %}

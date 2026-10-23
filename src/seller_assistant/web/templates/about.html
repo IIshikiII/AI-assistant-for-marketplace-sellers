@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-3xl font-bold mb-1">Как это работает</h1>
+<p class="opacity-70 mb-6">marketPilot AI — система поддержки управленческих решений продавца на маркетплейсах.</p>
+
+<ul class="steps steps-vertical md:steps-horizontal w-full mb-8">
+  <li class="step step-primary">Данные</li>
+  <li class="step step-primary">Причина</li>
+  <li class="step step-primary">Приоритет</li>
+  <li class="step step-primary">Действие</li>
+  <li class="step step-primary">Решение человека</li>
+  <li class="step">Эффект</li>
+</ul>
+
+<div class="grid md:grid-cols-2 gap-6">
+  <div class="card bg-base-100 shadow-sm"><div class="card-body text-sm space-y-2">
+    <h2 class="card-title text-base">Кто что делает</h2>
+    <p><b>Правила и расчёты</b> (детерминированно, проверяемо): прогноз спроса, запас в днях, точка заказа и объём закупки, ДРР и прибыльность рекламы, неликвид, просадки и их причины, оценка эффекта в рублях.</p>
+    <p><b>ИИ (DeepSeek)</b>: объясняет рекомендации простым языком, разбирает отзывы на темы и правки карточки, отвечает на вопросы о магазине, готовит сводку недели. Получает только уже посчитанные данные и не придумывает цифры.</p>
+    <p><b>Человек</b>: принимает или отклоняет каждое действие. Решения сохраняются в журнал — по нему потом измеряется эффект.</p>
+  </div></div>
+  <div class="card bg-base-100 shadow-sm"><div class="card-body text-sm">
+    <h2 class="card-title text-base">Допущения расчёта</h2>
+    <dl class="grid grid-cols-2 gap-y-1">
+      {% for k, v in assumptions.items() %}<dt class="opacity-60">{{ k }}</dt><dd class="font-medium">{{ v }}</dd>{% endfor %}
+    </dl>
+    <p class="opacity-60 mt-2">Прототип работает на демо-магазине (22 SKU, 60 дней). Подключение API Wildberries/Ozon и загрузка Excel — следующий шаг.</p>
+  </div></div>
+</div>
+{% endblock %}

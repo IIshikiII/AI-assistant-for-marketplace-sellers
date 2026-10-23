@@ -1,0 +1,54 @@
+{% set sev_label, sev_class = SEVERITY[rec.severity] %}
+<article id="rec-{{ rec.id }}" class="card bg-base-100 shadow-sm border border-base-300 {{ 'opacity-70' if rec.status != 'new' }}">
+  <div class="card-body gap-3">
+    <div class="flex flex-wrap items-start justify-between gap-2">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="badge {{ sev_class }} badge-sm">{{ sev_label }}</span>
+        <span class="badge badge-ghost badge-sm">{{ rec.area }}</span>
+        {% if rec.product %}<a href="/products/{{ rec.product_id }}" class="badge badge-outline badge-sm">{{ rec.product.sku }}</a>{% endif %}
+      </div>
+      <div class="text-right">
+        <div class="text-lg font-bold text-primary">{{ rec.effect_rub|rub }}</div>
+        <div class="text-xs opacity-60">эффект за 30 дн</div>
+      </div>
+    </div>
+    <h3 class="font-semibold text-lg leading-snug">{{ rec.title }}</h3>
+    <div class="grid md:grid-cols-2 gap-3 text-sm">
+      <div><div class="font-medium opacity-60 mb-1">Причина</div>{{ rec.cause }}</div>
+      <div><div class="font-medium opacity-60 mb-1">Действие</div>{{ rec.action }}</div>
+    </div>
+    <div class="text-sm opacity-70">{{ rec.effect_note }}</div>
+
+    <details class="collapse collapse-arrow bg-base-200 text-sm">
+      <summary class="collapse-title py-2 min-h-0 font-medium">Данные, на которых основан вывод</summary>
+      <div class="collapse-content">
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-1">
+          {% for k, v in rec.metrics.items() %}<dt class="opacity-60">{{ k }}</dt><dd class="font-medium">{{ v }}</dd>{% endfor %}
+        </dl>
+      </div>
+    </details>
+
+    <div id="ai-{{ rec.id }}">
+      {% if rec.ai_explanation %}{% with text=rec.ai_explanation, label="Объяснение marketPilot AI" %}{% include "partials/ai_text.html" %}{% endwith %}{% endif %}
+    </div>
+
+    {% if rec.status == 'new' %}
+    <div class="flex flex-wrap items-center gap-2 pt-1">
+      {% if not rec.ai_explanation %}
+      <button class="btn btn-sm btn-ghost text-primary" hx-post="/recommendations/{{ rec.id }}/explain" hx-target="#ai-{{ rec.id }}">
+        <span class="loading loading-spinner loading-xs htmx-indicator"></span>✦ Объяснить
+      </button>
+      {% endif %}
+      <form class="join ml-auto" hx-post="/recommendations/{{ rec.id }}/decide" hx-target="#rec-{{ rec.id }}" hx-swap="outerHTML">
+        <input name="comment" class="input input-sm join-item w-48 md:w-64" placeholder="Комментарий (необязательно)">
+        <button name="decision" value="accepted" class="btn btn-sm btn-success join-item">Принять</button>
+        <button name="decision" value="rejected" class="btn btn-sm btn-outline join-item">Отклонить</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="alert {{ 'alert-success' if rec.status == 'accepted' else '' }} py-2 text-sm">
+      {{ 'Принято' if rec.status == 'accepted' else 'Отклонено' }} — решение записано в <a href="/journal" class="link">журнал</a>.
+    </div>
+    {% endif %}
+  </div>
+</article>

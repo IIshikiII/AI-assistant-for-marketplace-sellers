@@ -1,16 +1,61 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="mp">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Ассистент продавца{% endblock %}</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <title>{% block title %}marketPilot AI{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
-  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js" defer></script>
+  {% block head %}{% endblock %}
 </head>
-<body>
-  <main class="container">
-    {% block content %}{% endblock %}
-  </main>
+<body class="min-h-screen bg-base-200">
+<div class="drawer lg:drawer-open">
+  <input id="nav" type="checkbox" class="drawer-toggle">
+  <div class="drawer-content flex flex-col">
+    <header class="navbar bg-base-100 border-b border-base-300 lg:hidden">
+      <label for="nav" class="btn btn-ghost btn-square">☰</label>
+      <span class="font-bold text-lg">marketPilot <span class="text-primary">AI</span></span>
+    </header>
+    <main class="p-4 md:p-8 max-w-7xl w-full mx-auto">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <aside class="drawer-side z-40">
+    <label for="nav" class="drawer-overlay"></label>
+    <div class="w-64 min-h-full bg-base-100 border-r border-base-300 flex flex-col">
+      <a href="/" class="px-6 py-5 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-primary text-primary-content grid place-items-center font-bold">mP</div>
+        <div>
+          <div class="font-bold leading-tight">marketPilot <span class="text-primary">AI</span></div>
+          <div class="text-xs opacity-60">штурман продавца</div>
+        </div>
+      </a>
+      {% set nav = [
+        ("dashboard", "/", "Обзор", "◧"),
+        ("recs", "/recommendations", "Действия", "✓"),
+        ("products", "/products", "Товары", "▤"),
+        ("copilot", "/copilot", "ИИ-копилот", "✦"),
+        ("journal", "/journal", "Журнал решений", "☰"),
+        ("about", "/about", "Как это работает", "?"),
+      ] %}
+      <ul class="menu w-full px-3 gap-1">
+        {% for key, href, label, icon in nav %}
+        <li><a href="{{ href }}" class="{{ 'menu-active' if active == key }}"><span class="w-5 text-center opacity-70">{{ icon }}</span>{{ label }}</a></li>
+        {% endfor %}
+      </ul>
+      <div class="mt-auto p-4 text-xs opacity-60 space-y-2">
+        <div class="badge badge-ghost badge-sm">Демо-магазин · WB + Ozon</div>
+        <form method="post" action="/demo/reset" onsubmit="return confirm('Пересоздать демо-данные и очистить журнал?')">
+          <button class="link link-hover">Сбросить демо-данные</button>
+        </form>
+      </div>
+    </div>
+  </aside>
+</div>
+{% block scripts %}{% endblock %}
 </body>
 </html>

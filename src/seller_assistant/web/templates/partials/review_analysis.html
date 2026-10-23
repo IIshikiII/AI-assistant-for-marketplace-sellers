@@ -1,0 +1,31 @@
+<div class="rounded-box border border-primary/30 bg-primary/5 p-4 space-y-3 text-sm">
+  <div class="flex items-center justify-between">
+    <div class="text-xs font-semibold text-primary">✦ Разбор отзывов marketPilot AI</div>
+    <button class="btn btn-ghost btn-xs" hx-post="/products/{{ p.id }}/reviews/analyze?fresh=true" hx-target="#analysis">
+      <span class="loading loading-spinner loading-xs htmx-indicator"></span>↻
+    </button>
+  </div>
+  {% if a.summary %}<p>{{ a.summary }}</p>{% endif %}
+  {% if a.themes %}
+  <div class="space-y-2">
+    {% for t in a.themes %}
+    <div>
+      <div class="flex justify-between gap-2">
+        <span class="font-medium">{{ t.theme }}</span>
+        <span class="badge badge-sm {{ 'badge-error' if t.sentiment == 'negative' else 'badge-success' }}">{{ t.count }}</span>
+      </div>
+      {% if t.quote %}<div class="text-xs opacity-60 italic">«{{ t.quote }}»</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if a.card_fixes %}
+  <div><div class="font-medium">Исправить в карточке</div><ul class="list-disc ml-5">{% for x in a.card_fixes %}<li>{{ x }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  {% if a.product_fixes %}
+  <div><div class="font-medium">Передать поставщику</div><ul class="list-disc ml-5">{% for x in a.product_fixes %}<li>{{ x }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  {% if a.reply_template %}
+  <div><div class="font-medium">Шаблон ответа покупателю</div><div class="bg-base-100 rounded-lg p-2 mt-1">{{ a.reply_template }}</div></div>
+  {% endif %}
+</div>

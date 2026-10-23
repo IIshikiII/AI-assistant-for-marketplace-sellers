@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+  <div>
+    <h1 class="text-3xl font-bold">Обзор магазина</h1>
+    <p class="opacity-70">Что происходит, почему и что делать — по данным за последние 7–30 дней.</p>
+  </div>
+  <button class="btn btn-primary" hx-post="/ai/digest" hx-target="#digest" hx-swap="innerHTML">
+    <span class="loading loading-spinner loading-sm htmx-indicator"></span>
+    ✦ Сводка недели от ИИ
+  </button>
+</div>
+
+<div class="stats stats-vertical md:stats-horizontal shadow-sm bg-base-100 w-full mb-6">
+  <div class="stat">
+    <div class="stat-title">Выручка, 7 дней</div>
+    <div class="stat-value text-2xl">{{ kpis.revenue_7|rub }}</div>
+    <div class="stat-desc {{ 'text-error' if kpis.revenue_change < 0 else 'text-success' }}">{{ kpis.revenue_change|pct(True) }} к прошлой неделе</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">Маржа после рекламы</div>
+    <div class="stat-value text-2xl">{{ kpis.margin_7|rub }}</div>
+    <div class="stat-desc">за 7 дней</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">Реклама</div>
+    <div class="stat-value text-2xl">{{ kpis.ad_spend_7|rub }}</div>
+    <div class="stat-desc">ДРР 14 дн: {{ kpis.drr_14|pct }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">Остатки</div>
+    <div class="stat-value text-2xl {{ 'text-error' if kpis.at_risk }}">{{ kpis.at_risk }} / {{ kpis.skus }}</div>
+    <div class="stat-desc">SKU в риске дефицита, {{ kpis.out_of_stock }} уже без товара</div>
+  </div>
+  <div class="stat">
+    <div class="stat-title">Заморожено в излишках</div>
+    <div class="stat-value text-2xl">{{ kpis.frozen|rub }}</div>
+    <div class="stat-desc">рейтинг 30 дн: {{ '%.2f'|format(kpis.rating) }} ★</div>
+  </div>
+</div>
+
+<div id="digest" class="mb-6"></div>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <section class="lg:col-span-2 space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold">Главные действия</h2>
+      <a href="/recommendations" class="link link-primary text-sm">Все {{ open_count }} →</a>
+    </div>
+    {% for rec in top %}
+      {% include "partials/rec_card.html" %}
+    {% else %}
+      <div class="alert">Открытых рекомендаций нет — всё под контролем.</div>
+    {% endfor %}
+  </section>
+
+  <aside class="space-y-4">
+    <div class="card bg-primary text-primary-content shadow-sm">
+      <div class="card-body">
+        <div class="text-sm opacity-80">Потенциальный эффект открытых действий</div>
+        <div class="text-3xl font-bold">{{ total_effect|rub }}</div>
+        <div class="text-sm opacity-80">за 30 дней · {{ critical }} критичных из {{ open_count }}</div>
+      </div>
+    </div>
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h3 class="card-title text-base">Эффект по направлениям</h3>
+        {% set max_v = (by_area.values()|max) if by_area else 1 %}
+        {% for area, value in by_area|dictsort(by='value', reverse=True) %}
+          <a href="/recommendations?area={{ area }}" class="block hover:bg-base-200 rounded-lg p-1 -m-1">
+            <div class="flex justify-between text-sm"><span>{{ area }}</span><span class="font-medium">{{ value|rub }}</span></div>
+            <progress class="progress progress-primary w-full" value="{{ value }}" max="{{ max_v }}"></progress>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body text-sm">
+        <h3 class="card-title text-base">Как читать</h3>
+        <p class="opacity-70">Цифры считают прозрачные правила по данным магазина. ИИ объясняет их и разбирает отзывы, но решение всегда за вами — принятые и отклонённые действия попадают в журнал.</p>
+      </div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

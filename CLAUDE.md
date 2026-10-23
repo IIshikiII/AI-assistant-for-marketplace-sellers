@@ -4,9 +4,11 @@
 
 ## Проект
 
-**ИИ-ассистент для продавцов на маркетплейсах** (Wildberries, Ozon и т. п.). Учебный проект курса «Практика создания продуктов ИИ», МГИМО, 2026.
+**marketPilot AI** — ИИ-система поддержки управленческих решений продавца на маркетплейсах (Wildberries, Ozon). Учебный проект курса «Практика создания продуктов ИИ», МГИМО, 2026.
 
-- Требования к продукту формулирует команда в [docs/requirements.md](docs/requirements.md). **Пока их нет — фичи не реализуем**, только инфраструктуру.
+- Требования и что уже реализовано в прототипе: [docs/requirements.md](docs/requirements.md).
+- Ключевой принцип: **цифры считают правила** (`services/analytics.py`, чистые функции), **LLM только объясняет** (`services/ai.py`) и не придумывает чисел. Решение принимает человек (журнал решений).
+- Данные — демо-магазин `services/demo_data.py` (загружается автоматически в пустую БД). Новые правила проверяйте тестами в `tests/test_analytics.py`.
 - Что нужно сдать по курсу: [docs/course-requirements.md](docs/course-requirements.md). Предзащита 24.10, защита 30.10.
 - Решения по архитектуре и стеку с причинами: [docs/decisions.md](docs/decisions.md).
 - `raw_docs/` — лекции и шаблоны курса. Лежат только локально (в `.gitignore`), **репозиторий публичный**.
@@ -16,7 +18,7 @@
 | Слой | Что |
 |---|---|
 | Язык | Python 3.12, зависимости через **uv** (`pyproject.toml` + `uv.lock`) |
-| Веб | FastAPI, HTML-страницы: Jinja2 + HTMX + Pico CSS (с CDN) |
+| Веб | FastAPI, HTML-страницы: Jinja2 + HTMX + Tailwind 4 + DaisyUI 5 + Chart.js (всё с CDN, без сборки) |
 | БД | PostgreSQL 16, SQLAlchemy 2 (sync), миграции Alembic |
 | LLM | **DeepSeek** через SDK `openai` (OpenAI-совместимый API), модель `deepseek-chat` |
 | Качество | ruff (lint + format), pytest, pre-commit |
@@ -29,7 +31,8 @@
 - **uv** 0.9 стоит глобально. Python не нужно ставить отдельно: uv сам берёт 3.12 (`.python-version`). Команды `python` в PATH **нет**, только `uv run python`.
 - Docker Desktop, Node 24, GitHub CLI `gh` (авторизован).
 - SSH: алиас сервера `LCT` в `~/.ssh/config`, GitHub по ключу.
-- Путь проекта содержит кириллицу и пробелы — всегда берите пути в кавычки.
+- Путь проекта содержит кириллицу и пробелы — всегда берите пути в кавычки. Из-за этого в `compose.yaml` явно задано `name: seller-assistant`.
+- Локальная БД — `127.0.0.1`, не `localhost` (на Windows `localhost` уходит в IPv6 и подключение виснет).
 
 ## Команды
 
@@ -56,8 +59,8 @@ src/seller_assistant/
   config.py        настройки из .env (pydantic-settings). Новые переменные — сюда и в .env.example
   db.py            engine, сессии, Base для моделей
   models/          ORM-модели. Каждую новую импортировать в models/__init__.py
-  api/             роутеры FastAPI (один файл — одна область)
-  services/        бизнес-логика: работа с маркетплейсами, сценарии ассистента
+  api/             health.py, pages.py (HTML-страницы и HTMX-фрагменты)
+  services/        analytics.py (KPI, правила, причины), shop.py (работа с БД), ai.py (LLM), demo_data.py
   llm/client.py    единственная точка обращения к DeepSeek
   web/templates/   Jinja2-шаблоны (base.html + страницы)
   web/static/      CSS/JS/картинки

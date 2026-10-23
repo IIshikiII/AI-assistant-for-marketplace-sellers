@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-3xl font-bold mb-1">Журнал решений</h1>
+<p class="opacity-70 mb-6">Что предложила система и что решил человек. Основа для оценки эффекта после внедрения.</p>
+
+<div class="stats shadow-sm bg-base-100 mb-6">
+  <div class="stat"><div class="stat-title">Принято</div><div class="stat-value text-success">{{ accepted }}</div><div class="stat-desc">ожидаемый эффект {{ accepted_effect|rub }}</div></div>
+  <div class="stat"><div class="stat-title">Отклонено</div><div class="stat-value">{{ rejected }}</div></div>
+</div>
+
+<div class="card bg-base-100 shadow-sm overflow-x-auto">
+  <table class="table">
+    <thead><tr><th>Когда</th><th>Рекомендация</th><th>Решение</th><th class="text-right">Эффект</th><th>Комментарий</th></tr></thead>
+    <tbody>
+    {% for e in entries %}
+      <tr>
+        <td class="whitespace-nowrap text-sm opacity-70">{{ e.created_at.strftime('%d.%m %H:%M') }}</td>
+        <td>{{ e.snapshot_title }}</td>
+        <td><span class="badge {{ 'badge-success' if e.decision == 'accepted' else 'badge-ghost' }}">{{ 'Принято' if e.decision == 'accepted' else 'Отклонено' }}</span></td>
+        <td class="text-right whitespace-nowrap">{{ e.snapshot_effect_rub|rub }}</td>
+        <td class="text-sm">{{ e.comment or '—' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="text-center opacity-60 py-8">Пока нет решений. Примите или отклоните рекомендацию на странице <a class="link" href="/recommendations">«Действия»</a>.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

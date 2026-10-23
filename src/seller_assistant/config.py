@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     app_env: str = "local"  # local | production
     log_level: str = "INFO"
 
-    database_url: str = "postgresql+psycopg://app:app@localhost:5432/app"
+    database_url: str = "postgresql+psycopg://app:app@127.0.0.1:5432/app"
 
     deepseek_api_key: SecretStr | None = None
     deepseek_base_url: str = "https://api.deepseek.com"

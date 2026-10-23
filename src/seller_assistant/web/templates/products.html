@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-3xl font-bold mb-1">Товары</h1>
+<p class="opacity-70 mb-6">Единая картина по SKU на всех маркетплейсах. Нажмите на товар, чтобы увидеть динамику и разбор отзывов.</p>
+
+<div class="card bg-base-100 shadow-sm overflow-x-auto">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>Товар</th><th>МП</th><th class="text-right">Цена</th><th class="text-right">Маржа/шт</th>
+        <th class="text-right">Продажи 7д</th><th class="text-right">Остаток</th><th class="text-right">Хватит, дн</th>
+        <th class="text-right">ДРР</th><th class="text-right">Рейтинг</th><th>Сигналы</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for s in stats %}
+      {% set p = s.product %}
+      <tr class="hover:bg-base-200 cursor-pointer" onclick="location.href='/products/{{ p.id }}'">
+        <td><div class="font-medium">{{ p.name }}</div><div class="text-xs opacity-60">{{ p.sku }} · {{ p.category }}</div></td>
+        <td><span class="badge badge-sm {{ 'badge-secondary' if p.marketplace == 'Ozon' else 'badge-primary' }}">{{ p.marketplace }}</span></td>
+        <td class="text-right">{{ s.price|rub }}</td>
+        <td class="text-right">{{ s.unit_margin|rub }}</td>
+        <td class="text-right">{{ s.units_7 }} <span class="text-xs {{ 'text-error' if (s.sales_change or 0) < -0.2 else 'opacity-50' }}">{{ s.sales_change|pct(True) }}</span></td>
+        <td class="text-right">{{ s.stock }}</td>
+        <td class="text-right {{ 'text-error font-semibold' if s.cover_days < p.lead_time_days else ('text-warning' if s.cover_days > 120 else '') }}">{{ s.cover_days|days }}</td>
+        <td class="text-right {{ 'text-error' if s.drr_14 and s.drr_14 > 0.3 }}">{{ s.drr_14|pct }}</td>
+        <td class="text-right">{{ '%.1f'|format(s.rating_30) if s.rating_30 else '—' }}</td>
+        <td>
+          {% for r in issues.get(p.id, []) %}{% set lbl, cls = SEVERITY[r.severity] %}<span class="badge badge-xs {{ cls }} mr-1">{{ r.area }}</span>{% endfor %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

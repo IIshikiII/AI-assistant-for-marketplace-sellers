@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-3xl font-bold mb-1">ИИ-копилот</h1>
+<p class="opacity-70 mb-6">Задайте вопрос о магазине — ответ строится только по данным магазина и рассчитанным рекомендациям.</p>
+
+<div class="card bg-base-100 shadow-sm">
+  <div class="card-body">
+    <div id="chat" class="space-y-4 min-h-40">
+      <div class="chat chat-start">
+        <div class="chat-header text-xs opacity-60 mb-1">marketPilot AI</div>
+        <div class="chat-bubble bg-base-200 text-base-content">Здравствуйте! Я вижу продажи, остатки, рекламу и отзывы по {{ '22' }} товарам на WB и Ozon. Спросите, например, что сделать в первую очередь.</div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2 mt-4" id="suggest">
+      {% for q in [
+        "Что мне сделать в первую очередь на этой неделе?",
+        "Почему упала выручка?",
+        "Какие товары срочно дозаказать и сколько?",
+        "Где я теряю деньги на рекламе?",
+        "Какие товары лучше распродать?",
+      ] %}
+      <button class="btn btn-sm btn-outline" onclick="ask(this.textContent)">{{ q }}</button>
+      {% endfor %}
+    </div>
+    <form id="ask-form" class="join w-full mt-3" hx-post="/copilot/ask" hx-target="#chat" hx-swap="beforeend"
+          hx-on::before-request="pending(this)" hx-on::after-request="done(this)">
+      <input name="question" id="q" required class="input join-item w-full" placeholder="Ваш вопрос…" autocomplete="off">
+      <button class="btn btn-primary join-item"><span class="loading loading-spinner loading-sm htmx-indicator"></span><span class="idle-label">Спросить</span></button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function ask(text) { document.getElementById('q').value = text; htmx.trigger('#ask-form', 'submit'); }
+function pending(form) {
+  const q = form.querySelector('input').value;
+  const chat = document.getElementById('chat');
+  chat.insertAdjacentHTML('beforeend', `<div class="chat chat-end" id="pending-q"><div class="chat-bubble chat-bubble-primary"></div></div>
+    <div class="chat chat-start" id="pending-a"><div class="chat-bubble bg-base-200 text-base-content"><span class="loading loading-dots loading-sm"></span></div></div>`);
+  document.querySelector('#pending-q .chat-bubble').textContent = q;
+  form.querySelector('input').value = '';
+}
+function done() {
+  document.getElementById('pending-q')?.remove();
+  document.getElementById('pending-a')?.remove();
+  window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
+}
+</script>
+{% endblock %}

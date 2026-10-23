@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+  <div>
+    <h1 class="text-3xl font-bold">Действия</h1>
+    <p class="opacity-70">Приоритет: сначала критичное, внутри — по эффекту в рублях. Суммарно: <b>{{ total_effect|rub }}</b> за 30 дней.</p>
+  </div>
+  <form method="post" action="/recommendations/refresh"><button class="btn btn-outline btn-sm">↻ Пересчитать по свежим данным</button></form>
+</div>
+
+<div class="flex flex-wrap gap-2 mb-4">
+  <div role="tablist" class="tabs tabs-box">
+    <a role="tab" href="?status={{ status }}" class="tab {{ 'tab-active' if not area }}">Все</a>
+    {% for a in AREAS %}<a role="tab" href="?status={{ status }}&area={{ a }}" class="tab {{ 'tab-active' if area == a }}">{{ a }}</a>{% endfor %}
+  </div>
+  <div role="tablist" class="tabs tabs-box ml-auto">
+    {% for key, label in [("new", "Открытые"), ("accepted", "Принятые"), ("rejected", "Отклонённые")] %}
+    <a role="tab" href="?status={{ key }}{{ '&area=' ~ area if area }}" class="tab {{ 'tab-active' if status == key }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="space-y-4">
+  {% for rec in recs %}
+    {% include "partials/rec_card.html" %}
+  {% else %}
+    <div class="alert">Здесь пусто.</div>
+  {% endfor %}
+</div>
+{% endblock %}

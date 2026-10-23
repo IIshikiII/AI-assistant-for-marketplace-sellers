@@ -4,6 +4,7 @@
 в тестах и при необходимости сменить провайдера.
 """
 
+import json
 from functools import lru_cache
 
 from openai import OpenAI
@@ -38,3 +39,17 @@ def complete(system: str, user: str, *, temperature: float = 0.3) -> str:
         temperature=temperature,
     )
     return response.choices[0].message.content or ""
+
+
+def complete_json(system: str, user: str, *, temperature: float = 0.2) -> dict:
+    """Запрос с ответом строго в JSON (response_format json_object). В system опишите схему."""
+    response = get_client().chat.completions.create(
+        model=get_settings().deepseek_model,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        temperature=temperature,
+        response_format={"type": "json_object"},
+    )
+    return json.loads(response.choices[0].message.content or "{}")
