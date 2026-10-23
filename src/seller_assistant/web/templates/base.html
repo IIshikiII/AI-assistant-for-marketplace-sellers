@@ -16,9 +16,17 @@
 <div class="drawer lg:drawer-open">
   <input id="nav" type="checkbox" class="drawer-toggle">
   <div class="drawer-content flex flex-col">
-    <header class="navbar bg-base-100 border-b border-base-300 lg:hidden">
-      <label for="nav" class="btn btn-ghost btn-square">☰</label>
-      <span class="font-bold text-lg">marketPilot <span class="text-primary">AI</span></span>
+    <header class="navbar bg-base-100 border-b border-base-300 px-4 md:px-8 gap-2 sticky top-0 z-30">
+      <label for="nav" class="btn btn-ghost btn-square lg:hidden">☰</label>
+      <span class="font-bold text-lg lg:hidden">marketPilot <span class="text-primary">AI</span></span>
+      <div class="ml-auto flex items-center gap-3">
+        <span class="text-xs opacity-60 hidden sm:inline">Режим</span>
+        <form method="post" action="/role" class="join">
+          {% for key, label in roles.items() %}
+          <button name="role" value="{{ key }}" class="btn btn-sm join-item {{ 'btn-primary' if role == key else 'btn-ghost border-base-300' }}">{{ label }}</button>
+          {% endfor %}
+        </form>
+      </div>
     </header>
     <main class="p-4 md:p-8 max-w-7xl w-full mx-auto">
       {% block content %}{% endblock %}
@@ -31,7 +39,7 @@
         <div class="w-9 h-9 rounded-xl bg-primary text-primary-content grid place-items-center font-bold">mP</div>
         <div>
           <div class="font-bold leading-tight">marketPilot <span class="text-primary">AI</span></div>
-          <div class="text-xs opacity-60">штурман продавца</div>
+          <div class="text-xs opacity-60">Цифры сходятся</div>
         </div>
       </a>
       {% set nav = [
@@ -47,6 +55,12 @@
         <li><a href="{{ href }}" class="{{ 'menu-active' if active == key }}"><span class="w-5 text-center opacity-70">{{ icon }}</span>{{ label }}</a></li>
         {% endfor %}
       </ul>
+      {% if role == 'admin' %}
+      <div class="px-6 pt-4 pb-1 text-xs font-semibold uppercase tracking-wide opacity-50">Администрирование</div>
+      <ul class="menu w-full px-3 gap-1">
+        <li><a href="/admin" class="{{ 'menu-active' if active == 'admin' }}"><span class="w-5 text-center opacity-70">◔</span>Метрики продукта</a></li>
+      </ul>
+      {% endif %}
       <div class="mt-auto p-4 text-xs opacity-60 space-y-2">
         <div class="badge badge-ghost badge-sm">Демо-магазин · WB + Ozon</div>
         <form method="post" action="/demo/reset" onsubmit="return confirm('Пересоздать демо-данные и очистить журнал?')">

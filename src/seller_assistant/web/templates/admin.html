@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>{% endblock %}
+
+{% macro tile(title, value, sub="", state=None, hint="") %}
+<div class="card bg-base-100 shadow-sm border border-base-300">
+  <div class="card-body p-5 gap-1">
+    <div class="flex items-center justify-between gap-2">
+      <span class="text-sm opacity-70">{{ title }}</span>
+      {% if state == "ok" %}<span class="badge badge-success badge-sm">в норме</span>
+      {% elif state == "bad" %}<span class="badge badge-error badge-sm">ниже цели</span>
+      {% elif state == "warn" %}<span class="badge badge-warning badge-sm">требует внимания</span>
+      {% elif state == "na" %}<span class="badge badge-ghost badge-sm">нет данных</span>{% endif %}
+    </div>
+    <div class="text-2xl font-bold">{{ value }}</div>
+    {% if sub %}<div class="text-xs opacity-60">{{ sub }}</div>{% endif %}
+    {% if hint %}<div class="text-xs opacity-50 mt-1">{{ hint }}</div>{% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro num(v, fmt="%.1f", empty="—") %}{{ fmt|format(v) if v is not none else empty }}{% endmacro %}
+
+{% block content %}
+{% set v, e, l, d, t = m.value, m.eval, m.llm, m.data, m.targets %}
+<div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+  <div>
+    <div class="badge badge-primary badge-outline mb-2">Только для администратора</div>
+    <h1 class="text-3xl font-bold">Метрики продукта</h1>
+    <p class="opacity-70">Здоровье marketPilot AI: приносит ли он ценность, насколько точны рекомендации, как работает ИИ и данные. Цели — из НФТ отчёта и <a class="link" href="https://github.com/IIshikiII/AI-assistant-for-marketplace-sellers/blob/main/docs/economics.md" target="_blank">экономики</a>.</p>
+  </div>
+  <a href="/admin" class="btn btn-outline btn-sm">↻ Обновить</a>
+</div>
+
+{# ───────── 1. Ценность ───────── #}
+<h2 class="text-xl font-semibold mb-3">1. Ценность для продавца</h2>
+<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+  {{ tile("Подтверждённый эффект", v.accepted_effect|rub, "сумма эффекта принятых решений · North Star", hint="ещё открыто: " ~ (v.open_effect|rub)) }}
+  {{ tile("Доля принятых рекомендаций", v.acceptance_rate|pct if v.acceptance_rate is not none else "—",
+          v.accepted ~ " из " ~ v.decided ~ " решений · цель ≥ " ~ (t.acceptance|pct),
+          ("na" if v.acceptance_rate is none else ("ok" if v.acceptance_rate >= t.acceptance else "bad"))) }}
+  {{ tile("Время до решения (медиана)",
+          (num(v.ttd_median_h * 60, "%.0f") ~ " мин") if v.ttd_median_h is not none and v.ttd_median_h < 1 else (num(v.ttd_median_h) ~ " ч" if v.ttd_median_h is not none else "—"),
+          "от появления рекомендации до решения человека", "na" if v.ttd_median_h is none else None,
+          hint="цель отчёта: сократить время решения в 2 раза") }}
+  {{ tile("Критичных без решения", v.critical_open, "из " ~ v.recs_open ~ " открытых рекомендаций",
+          "ok" if v.critical_open == 0 else "warn") }}
+</div>
+
+<div class="grid lg:grid-cols-2 gap-4 mb-10">
+  <div class="card bg-base-100 shadow-sm border border-base-300"><div class="card-body">
+    <h3 class="card-title text-base">Воронка рекомендаций</h3>
+    {% set top = v.funnel[0][1] or 1 %}
+    <div class="space-y-3">
+    {% for label, n in v.funnel %}
+      <div>
+        <div class="flex justify-between text-sm"><span>{{ label }}</span><span class="font-medium">{{ n }} <span class="opacity-50">· {{ (n / top)|pct }}</span></span></div>
+        <progress class="progress progress-primary w-full" value="{{ n }}" max="{{ top }}"></progress>
+      </div>
+    {% endfor %}
+    </div>
+  </div></div>
+  <div class="card bg-base-100 shadow-sm border border-base-300"><div class="card-body">
+    <h3 class="card-title text-base">Решения по направлениям</h3>
+    <div class="h-56"><canvas id="areas"></canvas></div>
+  </div></div>
+</div>
+
+{# ───────── 2. Качество рекомендаций ───────── #}
+<h2 class="text-xl font-semibold mb-1">2. Качество рекомендаций (evaluation)</h2>
+<p class="text-sm opacity-70 mb-3">Правила прогоняются на эталонном наборе: {{ e.cases }} SKU демо-магазина, у каждого размечена ожидаемая проблема ({{ e.expected }} ожидаемых рекомендаций, {{ e.healthy }} здоровых товаров). Прогон занял {{ e.runtime_ms }} мс.</p>
+<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+  {{ tile("Точность (precision)", e.precision|pct, e.tp ~ " верных из " ~ e.found ~ " выданных · цель ≥ " ~ (t.precision|pct), "ok" if e.precision >= t.precision else "bad", hint="доля рекомендаций, которые действительно нужны") }}
+  {{ tile("Полнота (recall)", e.recall|pct, e.tp ~ " найдено из " ~ e.expected ~ " · цель ≥ " ~ (t.recall|pct), "ok" if e.recall >= t.recall else "bad", hint="доля реальных проблем, которые система нашла") }}
+  {{ tile("F1", "%.2f"|format(e.f1), "среднее гармоническое точности и полноты") }}
+  {{ tile("Ложные тревоги на здоровых SKU", e.healthy_false_alarms|length, "из " ~ e.healthy ~ " товаров без проблем", "ok" if not e.healthy_false_alarms else "bad") }}
+</div>
+<div class="card bg-base-100 shadow-sm border border-base-300 mb-10 overflow-x-auto">
+  <div class="card-body">
+    <h3 class="card-title text-base">Журнал ошибок правил</h3>
+    {% if e.errors %}
+    <table class="table table-sm">
+      <thead><tr><th>Тип</th><th>SKU</th><th>Товар</th><th>Рекомендация</th></tr></thead>
+      <tbody>
+      {% for err in e.errors %}
+        <tr><td><span class="badge badge-sm {{ 'badge-warning' if 'FP' in err.type else 'badge-error' }}">{{ err.type }}</span></td><td>{{ err.sku }}</td><td>{{ err.name }}</td><td>{{ err.kind }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="text-xs opacity-60">FP — система выдала рекомендацию, которой нет в разметке (не всегда ошибка: может быть реальный побочный сигнал). FN — пропущенная проблема, критичнее для продавца.</p>
+    {% else %}<p class="text-sm opacity-70">Ошибок нет — все размеченные проблемы найдены, лишних рекомендаций нет.</p>{% endif %}
+  </div>
+</div>
+
+{# ───────── 3. ИИ-подсистема ───────── #}
+<h2 class="text-xl font-semibold mb-1">3. ИИ-подсистема (DeepSeek)</h2>
+<p class="text-sm opacity-70 mb-3">Модель <code>{{ l.model }}</code>. Каждый вызов логируется: задержка, токены, стоимость, ошибки.</p>
+<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+  {{ tile("Задержка p50 / p95", (num(l.p50) ~ " / " ~ num(l.p95) ~ " с") if l.p50 is not none else "—",
+          "цель НФТ: ≤ " ~ t.p50 ~ " с / ≤ " ~ t.p95 ~ " с",
+          ("na" if l.p50 is none else ("ok" if l.p50 <= t.p50 and l.p95 <= t.p95 else "bad"))) }}
+  {{ tile("Доля ошибок", l.error_rate|pct if l.error_rate is not none else "—", l.errors ~ " из " ~ l.calls ~ " вызовов",
+          ("na" if l.error_rate is none else ("ok" if l.error_rate <= 0.02 else "bad")), hint="цель ≤ 2%") }}
+  {{ tile("Стоимость LLM", "%.2f ₽"|format(l.cost), "%.3f ₽ за вызов"|format(l.cost_per_call) if l.cost_per_call else "вызовов ещё не было",
+          hint=((l.prompt_tokens + l.completion_tokens) ~ " токенов (" ~ l.prompt_tokens ~ " вход / " ~ l.completion_tokens ~ " выход)")) }}
+  {{ tile("Прогноз на месяц", "%.0f ₽"|format(l.month_projection), "бюджет " ~ (l.budget|rub) ~ " на клиента",
+          ("na" if not l.calls else ("ok" if l.month_projection <= l.budget else "bad")), hint="по темпу последних 30 дней") }}
+</div>
+<div class="grid lg:grid-cols-3 gap-4 mb-10">
+  <div class="card bg-base-100 shadow-sm border border-base-300 lg:col-span-2"><div class="card-body">
+    <h3 class="card-title text-base">Задержка вызовов, с</h3>
+    {% if l.series %}<div class="h-64"><canvas id="latency"></canvas></div>
+    {% else %}<p class="text-sm opacity-60">Вызовов пока нет. Нажмите «Объяснить», «Разбор отзывов ИИ» или спросите копилота.</p>{% endif %}
+  </div></div>
+  <div class="card bg-base-100 shadow-sm border border-base-300 overflow-x-auto"><div class="card-body">
+    <h3 class="card-title text-base">По сценариям</h3>
+    <table class="table table-xs">
+      <thead><tr><th>Сценарий</th><th class="text-right">Вызовов</th><th class="text-right">p50, с</th><th class="text-right">₽</th></tr></thead>
+      <tbody>
+      {% for k in l.kinds %}
+        <tr><td>{{ k.kind }}{% if k.errors %} <span class="badge badge-error badge-xs">{{ k.errors }}</span>{% endif %}</td><td class="text-right">{{ k.calls }}</td><td class="text-right">{{ num(k.p50) }}</td><td class="text-right">{{ "%.2f"|format(k.cost) }}</td></tr>
+      {% else %}<tr><td colspan="4" class="opacity-60">—</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <p class="text-xs opacity-50">Цены: ${{ l.prices[0] }} / ${{ l.prices[1] }} за 1 млн токенов вход/выход, {{ l.prices[2] }} ₽/$ — допущение, настраивается в .env.</p>
+    {% if l.recent_errors %}
+    <div class="mt-2 text-xs"><div class="font-medium">Последние ошибки</div>
+      {% for c in l.recent_errors %}<div class="opacity-70 truncate">{{ c.created_at.strftime('%d.%m %H:%M') }} · {{ c.error }}</div>{% endfor %}
+    </div>{% endif %}
+  </div></div>
+</div>
+
+{# ───────── 4. Данные ───────── #}
+<h2 class="text-xl font-semibold mb-1">4. Качество данных</h2>
+{% if d.empty %}<div class="alert">Данных нет.</div>{% else %}
+<p class="text-sm opacity-70 mb-3">{{ d.skus }} SKU × {{ d.days }} дней ({{ d.period[0].strftime('%d.%m') }}–{{ d.period[1].strftime('%d.%m.%Y') }}), {{ d.rows }} записей продаж и остатков.</p>
+<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+  {{ tile("Data Quality (полнота)", d.completeness|pct, d.rows ~ " валидных из " ~ d.expected_rows ~ " ожидаемых · цель ≥ " ~ (t.dq|pct), "ok" if d.completeness >= t.dq else "bad") }}
+  {{ tile("Дубликаты", "%.2f%%"|format(d.duplicate_rate * 100), d.duplicates ~ " записей · цель ≤ " ~ (t.dup|pct), "ok" if d.duplicate_rate <= t.dup else "bad") }}
+  {{ tile("Свежесть данных", ("вчера" if d.lag_days == 1 else (d.lag_days ~ " дн назад")), "последний день данных: " ~ d.period[1].strftime('%d.%m'), "ok" if d.lag_days <= 1 else "bad", hint="НФТ для боевых коннекторов: задержка ≤ 30 мин") }}
+  {{ tile("Карточки товара заполнены", d.product_fields|pct, "себестоимость и срок поставки — нужны для расчёта маржи и закупки", "ok" if d.product_fields >= t.dq else "bad") }}
+</div>
+<div class="card bg-base-100 shadow-sm border border-base-300 mb-6"><div class="card-body">
+  <h3 class="card-title text-base">Источники данных</h3>
+  <div class="flex flex-wrap gap-2">
+    {% for name, status in d.sources %}<span class="badge {{ 'badge-success' if status == 'подключён' else 'badge-ghost' }}">{{ name }}: {{ status }}</span>{% endfor %}
+  </div>
+  <p class="text-xs opacity-60">Отзывы есть у {{ d.with_reviews }} SKU, реклама — у {{ d.with_ads }} SKU из {{ d.skus }}.</p>
+</div></div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const areas = {{ m.value.by_area|tojson }};
+const names = Object.keys(areas);
+new Chart(document.getElementById('areas'), {
+  type: 'bar',
+  data: {labels: names, datasets: [
+    {label: 'Принято', data: names.map(n => areas[n].accepted), backgroundColor: '#16a34a'},
+    {label: 'Отклонено', data: names.map(n => areas[n].rejected), backgroundColor: '#94a3b8'},
+    {label: 'Открыто', data: names.map(n => areas[n].open), backgroundColor: '#4f46e555'},
+  ]},
+  options: {maintainAspectRatio: false, indexAxis: 'y', scales: {x: {stacked: true, ticks: {precision: 0}}, y: {stacked: true}}, plugins: {legend: {position: 'bottom'}}}
+});
+const series = {{ m.llm.series|tojson }};
+const el = document.getElementById('latency');
+if (el) new Chart(el, {
+  type: 'line',
+  data: {labels: series.map(x => new Date(x.t).toLocaleTimeString('ru', {hour: '2-digit', minute: '2-digit'})),
+    datasets: [
+      {label: 'Задержка, с', data: series.map(x => x.s), borderColor: '#4f46e5', backgroundColor: '#4f46e5',
+       pointBackgroundColor: series.map(x => x.ok ? '#4f46e5' : '#e11d48'), pointRadius: 3, tension: .2},
+      {label: 'Цель p50 ({{ m.targets.p50 }} с)', data: series.map(() => {{ m.targets.p50 }}), borderColor: '#f59e0b', borderDash: [6,4], pointRadius: 0},
+    ]},
+  options: {maintainAspectRatio: false, plugins: {legend: {position: 'bottom'},
+    tooltip: {callbacks: {afterLabel: c => series[c.dataIndex]?.kind || ''}}},
+    scales: {y: {beginAtZero: true}}}
+});
+</script>
+{% endblock %}

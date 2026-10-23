@@ -30,7 +30,7 @@ def explain_recommendation(rec: Recommendation) -> str:
         "(в деньгах), **Что сделать сегодня** (2–4 конкретных шага). Отдельной строкой — "
         "**Риски**: когда рекомендация может не сработать. Не более 160 слов."
     )
-    return llm.complete(STYLE, user)
+    return llm.complete(STYLE, user, kind="explain")
 
 
 REVIEW_SCHEMA = """Верни JSON строго такого вида:
@@ -55,7 +55,7 @@ def analyze_reviews(product: Product, limit: int = 60) -> dict:
         f"категория {product.category}.\nОтзывы покупателей ({len(reviews)} шт, новые сверху):\n"
         f"{lines}"
     )
-    return llm.complete_json(STYLE + "\n\n" + REVIEW_SCHEMA, user)
+    return llm.complete_json(STYLE + "\n\n" + REVIEW_SCHEMA, user, kind="reviews")
 
 
 def _shop_context(kpis: dict, stats: list[analytics.Stats], recs: list[Recommendation]) -> str:
@@ -96,7 +96,7 @@ def weekly_digest(kpis: dict, stats: list[analytics.Stats], recs: list[Recommend
         "предложениях; 2) **Топ-5 действий на эту неделю** с эффектом в рублях, по убыванию "
         "важности; 3) **Что идёт хорошо** — 1–2 пункта. Не более 220 слов."
     )
-    return llm.complete(STYLE, user)
+    return llm.complete(STYLE, user, kind="digest")
 
 
 def ask_copilot(
@@ -107,4 +107,4 @@ def ask_copilot(
         "Ответь на вопрос, опираясь только на эти данные. Ссылайся на конкретные SKU и цифры. "
         "Если вопрос не про магазин — вежливо верни разговор к данным магазина."
     )
-    return llm.complete(STYLE, user)
+    return llm.complete(STYLE, user, kind="copilot")

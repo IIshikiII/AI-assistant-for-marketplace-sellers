@@ -10,7 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from seller_assistant.api import health, pages
 from seller_assistant.config import get_settings
 from seller_assistant.db import SessionLocal
-from seller_assistant.services import shop
+from seller_assistant.llm import client as llm
+from seller_assistant.services import shop, telemetry
 from seller_assistant.web.templating import WEB_DIR
 
 settings = get_settings()
@@ -20,6 +21,7 @@ log = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    llm.observers.append(telemetry.record_llm_call)
     # Пустая база — загружаем демо-магазин, чтобы прототип сразу было что показать.
     try:
         with SessionLocal() as session:

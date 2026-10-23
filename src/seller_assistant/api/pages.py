@@ -9,15 +9,26 @@ from sqlalchemy.orm import Session, selectinload
 
 from seller_assistant.db import get_session
 from seller_assistant.models import Product, Recommendation
-from seller_assistant.services import ai, analytics, shop
+from seller_assistant.services import admin_metrics, ai, analytics, shop
 from seller_assistant.web.templating import templates
 
 log = logging.getLogger(__name__)
 router = APIRouter(include_in_schema=False)
 
 
-def _render(request: Request, name: str, **ctx) -> HTMLResponse:
-    return templates.TemplateResponse(request, name, ctx)
+ROLES = {"seller": "Селлер", "admin": "Админ"}
+
+
+def current_role(request: Request) -> str:
+    """Роль из cookie. Пока это переключатель для демо, а не авторизация."""
+    role = request.cookies.get("role", "seller")
+    return role if role in ROLES else "seller"
+
+
+def _render(request: Request, name: str, status_code: int = 200, **ctx) -> HTMLResponse:
+    ctx.setdefault("role", current_role(request))
+    ctx.setdefault("roles", ROLES)
+    return templates.TemplateResponse(request, name, ctx, status_code=status_code)
 
 
 def _ai_error(request: Request, exc: Exception) -> HTMLResponse:
@@ -215,3 +226,23 @@ def about(request: Request) -> HTMLResponse:
 def reset_demo(session: Session = Depends(get_session)) -> RedirectResponse:
     shop.reset_demo(session)
     return RedirectResponse("/", status_code=303)
+
+
+@router.post("/role")
+def switch_role(request: Request, role: str = Form(...)) -> RedirectResponse:
+    target = "/admin" if role == "admin" else "/"
+    back = request.headers.get("referer") or target
+    if role != "admin" and "/admin" in back:
+        back = "/"
+    response = RedirectResponse(back if role != "admin" else target, status_code=303)
+    response.set_cookie(
+        "role", role if role in ROLES else "seller", max_age=60 * 60 * 24 * 30, samesite="lax"
+    )
+    return response
+
+
+@router.get("/admin", response_class=HTMLResponse)
+def admin(request: Request, session: Session = Depends(get_session)) -> HTMLResponse:
+    if current_role(request) != "admin":
+        return _render(request, "forbidden.html", status_code=403, active="admin")
+    return _render(request, "admin.html", active="admin", m=admin_metrics.collect(session))

@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-chat"
     llm_timeout_seconds: float = 60.0
+    # Цены DeepSeek для расчёта стоимости вызовов (USD за 1 млн токенов) и курс.
+    # Это допущения: сверяйте с https://api-docs.deepseek.com/quick_start/pricing
+    deepseek_price_input_usd: float = 0.28
+    deepseek_price_output_usd: float = 0.42
+    usd_rub: float = 95.0
+    llm_budget_rub_month: float = 1500.0  # бюджет на LLM на одного клиента (docs/economics.md)
 
 
 @lru_cache
