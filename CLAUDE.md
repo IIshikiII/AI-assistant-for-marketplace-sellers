@@ -11,6 +11,7 @@
 - Данные — демо-магазин `services/demo_data.py` (загружается автоматически в пустую БД). Новые правила проверяйте тестами в `tests/test_analytics.py`.
 - Что нужно сдать по курсу: [docs/course-requirements.md](docs/course-requirements.md). Предзащита 24.10, защита 30.10.
 - Решения по архитектуре и стеку с причинами: [docs/decisions.md](docs/decisions.md).
+- Экономика, чувствительность и план пилота: [docs/economics.md](docs/economics.md).
 - `raw_docs/` — лекции и шаблоны курса. Лежат только локально (в `.gitignore`), **репозиторий публичный**.
 
 ## Стек

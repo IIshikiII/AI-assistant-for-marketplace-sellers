@@ -23,4 +23,5 @@ uv run uvicorn seller_assistant.main:app --reload
 - [CLAUDE.md](CLAUDE.md) — стек, команды, правила кода, деплой. Главный документ для разработчиков и ИИ-ассистентов.
 - [docs/requirements.md](docs/requirements.md) — требования к продукту.
 - [docs/decisions.md](docs/decisions.md) — принятые решения и причины.
+- [docs/economics.md](docs/economics.md) — экономика, чувствительность и план пилота.
 - [docs/course-requirements.md](docs/course-requirements.md) — что нужно сдать по курсу.
