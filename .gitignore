@@ -1,0 +1,27 @@
+# Исходные материалы курса — только локально
+raw_docs/
+
+# Секреты
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Личные настройки Claude Code (общие — в .claude/settings.json)
+.claude/settings.local.json

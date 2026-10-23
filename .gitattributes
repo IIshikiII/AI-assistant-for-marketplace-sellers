@@ -1,0 +1,6 @@
+# Все текстовые файлы хранятся с LF. Иначе на Windows shell-скрипты ломаются на сервере (\r).
+* text=auto eol=lf
+*.sh text eol=lf
+*.pdf binary
+*.png binary
+*.jpg binary

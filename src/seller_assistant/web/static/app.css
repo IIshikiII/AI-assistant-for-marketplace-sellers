@@ -1,0 +1,4 @@
+/* Свои стили поверх Pico CSS. */
+main.container {
+  padding-top: 3rem;
+}
