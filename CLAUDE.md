@@ -10,9 +10,10 @@
 - Ключевой принцип: **цифры считают правила** (`services/analytics.py`, чистые функции), **LLM только объясняет** (`services/ai.py`) и не придумывает чисел. Решение принимает человек (журнал решений).
 - Роли: переключатель «Селлер / Админ» в шапке (cookie `role`, это демо, не авторизация). Раздел `/admin` — метрики продукта (`services/admin_metrics.py`): ценность, evaluation правил (precision/recall на размеченном демо-наборе), телеметрия LLM (таблица `llm_calls`, пишется наблюдателем в `llm/client.py`), качество данных. Цели — из НФТ отчёта.
 - Данные — демо-магазин `services/demo_data.py` (загружается автоматически в пустую БД). Новые правила проверяйте тестами в `tests/test_analytics.py`.
-- Что нужно сдать по курсу: [docs/course-requirements.md](docs/course-requirements.md). Предзащита 24.10, защита 30.10.
-- Решения по архитектуре и стеку с причинами: [docs/decisions.md](docs/decisions.md).
+- Предзащита 24.10, защита 30.10.
 - Экономика, чувствительность и план пилота: [docs/economics.md](docs/economics.md).
+- Паспорт продукта v2.0: `docs/Паспорт_продукта_marketPilot_AI_v2.0.pdf`. Интервью с продавцами: `docs/interview/`. Слайды предзащиты: `docs/marketPilot_predzashita.html`.
+- Value Proposition Canvas и Lean Canvas: `docs/value-proposition-canvas.pdf`, `docs/lean-canvas.pdf`.
 - `raw_docs/` — лекции и шаблоны курса. Лежат только локально (в `.gitignore`), **репозиторий публичный**.
 
 ## Стек
